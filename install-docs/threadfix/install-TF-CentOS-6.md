@@ -1,5 +1,7 @@
 # Install ThreadFix on CentOS/RHEL 6.x
 
+## Install Java 8
+
 ### Get the latest version of Java's 
 
 Find out what the current version is at [Oracle Java Download Page](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
@@ -57,5 +59,11 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.45-b02, mixed mode)
 
 ``` 
 
+## Install Tomcat 8
+
+### Get the latest version of Tomcat 8
+
+
+
 #### Resources used:
-[http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/]
++ http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
