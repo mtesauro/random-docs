@@ -176,6 +176,13 @@ tcp        0      0 :::22                       :::*                        LIST
 
 ### Create an init.d 
 
+### Harden Tomcat
+
+### Install ThreadFix war file
+
+Inject our own jdbc.properties file into the TF war file
+
+
 #### Resources used:
 + http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
 * https://www.kernel.org/signature.html
