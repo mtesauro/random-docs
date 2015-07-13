@@ -174,15 +174,185 @@ tcp        0      0 0.0.0.0:8080                0.0.0.0:*                   LIST
 tcp        0      0 :::22                       :::*                        LISTEN      4481/sshd           
 ```
 
-### Create an init.d 
+### Create an init.d script
 
-### Harden Tomcat
+Create a few directories we need for the init.d script and easier updates of Tomcat and Threadfix
+
+```
+# mkdir -p /opt/java-apps/webapps 
+# mkdir /opt/java-apps/logs
+# mkdir /opt/java-apps/temp
+# mkdir /opt/java-apps/work
+# cp -a /opt/tomcat/conf /opt/java-apps/
+```
+
+Create a script that will start and stop Tomcat during server restarts:
+
+```
+# cd /etc/init.d/
+# vi tomcat
+  (contents at the bottom of this doc)
+```
+
+### Create a user for Tomcat/ThreadFix to use
+
+
 
 ### Install ThreadFix war file
+
+scp the ThreadFix WAR file over
 
 Inject our own jdbc.properties file into the TF war file
 
 
+### Test that ThreadFix works
+
+
+
+### Harden Tomcat
+
 #### Resources used:
 + http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
 * https://www.kernel.org/signature.html
+* http://tecadmin.net/steps-to-install-tomcat-server-on-centos-rhel/
+* http://www.davidghedini.com/pg/entry/install_tomcat_7_on_centos
+* https://gist.github.com/timothyhutz/207c9b8f8b4ff3f79abd
+* http://darkmind2007.blogspot.com/2010/06/linux-add-custom-script-to-chkconfig.html
+* https://gist.github.com/miglen/5590986
+* https://www.owasp.org/index.php/Securing_tomcat
+* 
+
+### Config files
+
+> /etc/init.d/tomcat
+
+```
+#!/bin/bash
+# chkconfig: 2345 95 20
+# description: Tomcat installation used to run ThreadFix
+# processname: threadfix
+#
+# Tomcat 8 start/stop/status init.d script
+# Initially forked from: https://gist.github.com/valotas/1000094
+# @author: Miglen Evlogiev <bash@miglen.com>
+#
+# Updated and modified for use with ThreadFix by Matt Tesauro <mtesauro@gmail.com> based on Gist at
+# https://gist.github.com/timothyhutz/207c9b8f8b4ff3f79abd
+#
+
+# JAVA_HOME and PATH already set - see /etc/environment
+
+# Set CATALINA_HOME - where Tomcat has been installed
+CATALINA_HOME=/opt/tomcat
+
+#CATALINA_BASE is the location of several key directories to run ThreadFix and hold the WAR file
+export CATALINA_BASE=/opt/java-apps
+
+#TOMCAT_USAGE is the message if this script is called without any options
+TOMCAT_USAGE="Usage: $0 {\e[00;32mstart\e[00m|\e[00;31mstop\e[00m|\e[00;31mkill\e[00m|\e[00;32mstatus\e[00m|\e[00;31mrestart\e[00m}"
+
+#SHUTDOWN_WAIT is wait time in seconds for java proccess to stop
+SHUTDOWN_WAIT=20
+
+tomcat_pid() {
+        echo `ps -fe | grep $CATALINA_BASE | grep -v grep | tr -s " "|cut -d" " -f2`
+}
+ 
+start() {
+  pid=$(tomcat_pid)
+  if [ -n "$pid" ]
+  then
+    echo -e "\e[00;31mTomcat is already running (pid: $pid)\e[00m"
+  else
+    # Start tomcat
+    echo -e "\e[00;32mStarting tomcat\e[00m"
+    #ulimit -n 100000
+    #umask 007
+    #/bin/su -p -s /bin/sh $TOMCAT_USER
+        if [ `user_exists $TOMCAT_USER` = "1" ]
+        then
+                /bin/su $TOMCAT_USER -c $CATALINA_HOME/bin/startup.sh
+        else
+                sh $CATALINA_HOME/bin/startup.sh
+        fi
+        status
+  fi
+  return 0
+}
+
+status(){
+          pid=$(tomcat_pid)
+          if [ -n "$pid" ]; then echo -e "\e[00;32mTomcat is running with pid: $pid\e[00m"
+          else echo -e "\e[00;31mTomcat is not running\e[00m"
+          fi
+}
+
+terminate() {
+        echo -e "\e[00;31mTerminating Tomcat\e[00m"
+        kill -9 $(tomcat_pid)
+}
+ 
+stop() {
+  pid=$(tomcat_pid)
+  if [ -n "$pid" ]
+  then
+    echo -e "\e[00;31mStoping Tomcat\e[00m"
+    #/bin/su -p -s /bin/sh $TOMCAT_USER
+        sh $CATALINA_HOME/bin/shutdown.sh
+
+    let kwait=$SHUTDOWN_WAIT
+    count=0;
+    until [ `ps -p $pid | grep -c $pid` = '0' ] || [ $count -gt $kwait ]
+    do
+      echo -n -e "\n\e[00;31mwaiting for processes to exit\e[00m";
+      sleep 1
+      let count=$count+1;
+    done
+
+    if [ $count -gt $kwait ]; then
+      echo -n -e "\n\e[00;31mkilling processes didn't stop after $SHUTDOWN_WAIT seconds\e[00m"
+      terminate
+    fi
+  else
+    echo -e "\e[00;31mTomcat is not running\e[00m"
+  fi
+
+  # Gratuitous echo to get the terminal back lined up
+  echo ""
+
+  return 0
+}
+
+ 
+user_exists(){
+        if id -u $1 >/dev/null 2>&1; then
+        echo "1"
+        else
+                echo "0"
+        fi
+}
+
+case $1 in
+        start)
+          start
+        ;;
+        stop)
+          stop
+        ;;
+        restart)
+          stop
+          start
+        ;;
+        status)
+                status
+        ;;
+        kill)
+                terminate
+        ;;
+        *)
+                echo -e $TOMCAT_USAGE
+        ;;
+esac
+exit 0
+
+```
