@@ -151,28 +151,7 @@ tcp        0      0 :::8009                     :::*                        LIST
 tcp        0      0 :::8080                     :::*                        LISTEN      17743/java
 ```
 
-If you're *lucky*, it will only be listening on IPv6 addresses like the above.  To fix that create a setenv.sh script in the /opt/tomcat/bin.  From the comments in catalina.sh, which is called by startup.sh:
-
-> Do not set the variables in this script. Instead put them into a script
-> setenv.sh in CATALINA_BASE/bin to keep your customizations separate.
-
-Create setenv.sh with vi or your favorite editor including the following contents:
-
-```
-JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true "
-```
-Much better now:
-
-```
-# netstat -ptln
-Active Internet connections (only servers)
-Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name   
-tcp        0      0 0.0.0.0:22                  0.0.0.0:*                   LISTEN      4481/sshd           
-tcp        0      0 127.0.0.1:8005              0.0.0.0:*                   LISTEN      17808/java          
-tcp        0      0 0.0.0.0:8009                0.0.0.0:*                   LISTEN      17808/java          
-tcp        0      0 0.0.0.0:8080                0.0.0.0:*                   LISTEN      17808/java          
-tcp        0      0 :::22                       :::*                        LISTEN      4481/sshd           
-```
+If you're *lucky*, it will only be listening on IPv6 addresses like the above.  That's OK for now.  We address this in the init.d script we create in the next step, forcing Tomcat to listen only on the IPv4 address.
 
 ### Create an init.d script
 
@@ -194,7 +173,37 @@ Create a script that will start and stop Tomcat during server restarts:
   (contents at the bottom of this doc)
 ```
 
+Now add Tomcat to chkconfig so that is starts up on reboot.  Go ahead an make sure it works as expected.
+
+```
+# chkconfig --add tomcat
+# chkconfig --list tomcat
+tomcat   0:off  1:off  2:on  3:on  4:on  5:on  6:off
+# service tomcat status
+Tomcat is not running
+# service tomcat start
+Starting tomcat
+ [a few lines removed]
+Tomcat is running with pid: 19734
+# service tomcat stop
+Stoping Tomcat
+ [a few lines removed]
+waiting for processes to exit
+#
+```
+
 ### Create a user for Tomcat/ThreadFix to use
+
+Create user so Tomcat does not as root and use /opt/tomcat as its home directory.
+
+```
+# groupadd tomcat
+# useradd -g tomcat -c "Apache Tomcat" -d /opt/tomcat tomcat
+useradd: warning: the home directory already exists.
+Not copying any file from skel directory into it.
+# chown -R tomcat.tomcat /opt/tomcat/
+# chown -R tomcat.tomcat /opt/java-apps/
+```
 
 
 
@@ -224,6 +233,14 @@ Inject our own jdbc.properties file into the TF war file
 
 ### Config files
 
+> /etc/environment
+
+```
+# Setup for the Oracle Java RPM
+export JAVA_HOME=/usr/java/jdk1.8.0_45
+export JRE_HOME=/usr/java/jdk1.8.0_45/jre
+```
+
 > /etc/init.d/tomcat
 
 ```
@@ -247,6 +264,14 @@ CATALINA_HOME=/opt/tomcat
 
 #CATALINA_BASE is the location of several key directories to run ThreadFix and hold the WAR file
 export CATALINA_BASE=/opt/java-apps
+
+# Force Java to prefer/use the IPv4 address over the default IPv6 preference.
+# Comment out the line below to have Tomcat listen only on the IPv6 address, assuming IPv6 is configured
+# I'd recomment fronting Tomcat with Nginx or similar to allow easier SSL, sharing host with other apps, etc.
+export JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true "
+
+# Set the user Tomcat will run as
+export TOMCAT_USER=tomcat
 
 #TOMCAT_USAGE is the message if this script is called without any options
 TOMCAT_USAGE="Usage: $0 {\e[00;32mstart\e[00m|\e[00;31mstop\e[00m|\e[00;31mkill\e[00m|\e[00;32mstatus\e[00m|\e[00;31mrestart\e[00m}"
