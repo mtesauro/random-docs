@@ -2,7 +2,7 @@
 
 ## Install Java 8
 
-### Get the latest version of Java's 
+### Get the latest version of Java 8 from Oracle 
 
 Find out what the current version is at [Oracle Java Download Page](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
 
@@ -154,14 +154,10 @@ If you're *lucky*, it will only be listening on IPv6 addresses like the above.  
 
 ### Create an init.d script
 
-Create a few directories we need for the init.d script and easier updates of Tomcat and Threadfix
+First, create a scratch directory for ThreadFix to use
 
 ```
-# mkdir -p /opt/java-apps/webapps 
-# mkdir /opt/java-apps/logs
-# mkdir /opt/java-apps/temp
-# mkdir /opt/java-apps/work
-# cp -a /opt/tomcat/conf /opt/java-apps/
+# mkdir /opt/tomcat/tfscratch
 ```
 
 Create a script that will start and stop Tomcat during server restarts:
@@ -201,31 +197,56 @@ Create user so Tomcat does not as root and use /opt/tomcat as its home directory
 useradd: warning: the home directory already exists.
 Not copying any file from skel directory into it.
 # chown -R tomcat.tomcat /opt/tomcat/
-# chown -R tomcat.tomcat /opt/java-apps/
 ```
 
 ### Install ThreadFix war file
 
-Move (e.g. scp) the ThreadFix WAR file over to the server.
+Move (e.g. scp) the ThreadFix WAR file over to the server and extract the WAR contents
 
-Inject our own jdbc.properties file into the TF war file
-**currently using HSQL in create mode** 
-**edited jdbc.properties**
+```
+# cd /root
+# mkdir tf-temp
+# mv /location/of/threadfix/war/threadfix.war /root/tf-temp
+# cd /root/tf-temp
+# unzip threadfix.war -d threadfix
+```
 
-Setup ThreadFix logging
-**edited log4j.xml**
+Edit or replace the jdbc.properties file in the expanded .war file to point at your MySQL/MariaDB database.
 
-Setup temporary scratch folder & bump up memory
+```
+# vi threadfix/WEB-INF/classes/jdbc.properties
+  (example at the bottom of this doc)
+```
+
+Move the ThreadFix app over to Tomcat
+
+```
+# mv threadfix /opt/tomcat/webapps/
+# chown -R tomcat.tomcat /opt/tomcat/webapps/threadfix/
+```
 
 ### Test that ThreadFix works
 
+Startup Tomcat
 
+```
+# service tomcat start
+```
+
+And head to http://your-host-name.com:8080/threadfix
+
+The default credentials are
+
+* Username: user
+* Password: password
+
+**Change these and setup a ThreadFix admin account right after your first login or be owned.**
 
 ### Harden Tomcat
 
-Best suggestion is to front Tomcat with Nginx and use iptables to close all but 22, 80 and 443 inbound.
+Best suggestion is to front Tomcat with Nginx and use iptables to close all but 22, 80 and 443 inbound.  Then configure Nginx to forward 80 to 443. Tomcat only needs to answer to localhost requests from Nginx plus SSL and other configuration management is much easier with Nginx.
 
-#### Resources used:
+#### Helpful Resources
 + http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
 * https://www.kernel.org/signature.html
 * http://tecadmin.net/steps-to-install-tomcat-server-on-centos-rhel/
@@ -234,7 +255,10 @@ Best suggestion is to front Tomcat with Nginx and use iptables to close all but 
 * http://darkmind2007.blogspot.com/2010/06/linux-add-custom-script-to-chkconfig.html
 * https://gist.github.com/miglen/5590986
 * https://www.owasp.org/index.php/Securing_tomcat
-* 
+* http://tomcat.apache.org/tomcat-3.2-doc/uguide/tomcat_ug.html
+* https://tomcat.apache.org/tomcat-7.0-doc/logging.html
+* https://www.unidata.ucar.edu/software/thredds/v4.3/tds/tds4.3/reference/JavaOptsSummary.html
+* http://blog.sokolenko.me/2014/11/javavm-options-production.html
 
 ### Config files
 
@@ -262,18 +286,40 @@ export JRE_HOME=/usr/java/jdk1.8.0_45/jre
 # https://gist.github.com/timothyhutz/207c9b8f8b4ff3f79abd
 #
 
-# JAVA_HOME and PATH already set - see /etc/environment
+# JAVA_HOME and PATH already set in /etc/environment
+source /etc/environment
 
 # Set CATALINA_HOME - where Tomcat has been installed
 CATALINA_HOME=/opt/tomcat
 
 #CATALINA_BASE is the location of several key directories to run ThreadFix and hold the WAR file
-export CATALINA_BASE=/opt/java-apps
+export CATALINA_BASE=/opt/tomcat
 
 # Force Java to prefer/use the IPv4 address over the default IPv6 preference.
 # Comment out the line below to have Tomcat listen only on the IPv6 address, assuming IPv6 is configured
 # I'd recomment fronting Tomcat with Nginx or similar to allow easier SSL, sharing host with other apps, etc.
 export JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true "
+# Commennt out line above and uncomment line below to run with verbose debug logging for log4j
+#export JAVA_OPTS="$JAVA_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dlog4j.debug "
+
+# Set the scracth directory for ThreadFix to use
+export JAVA_OPTS="$JAVA_OPTS -Dthreadfix.scratchFolder=/opt/tomcat/tfscratch "
+
+# Set the memory useage for ThreadFix
+export JAVA_OPTS="$JAVA_OPTS -Xms256m -Xmx2048m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m "
+# -Xms{##}m sets the initial amount of memory allocated to the JVM heap
+# -Xmx{##}m sets the maximum amount of memory that can be allocated to the JVM heap
+# For an server with lots of RAM, -Xms4096m -Xmx8192m is a good place to start
+# Next two require Java 8, if Java 7, replace with -XX:PermSize=256m -XX:MaxPermSize=256m
+# -XX:MetaspaceSize=256m & -XX:MaxMetaspaceSize=256m - By default Metaspace in Java VM 8 is not limited, so
+#   so setting these limits them for stability so they don't grow until DOS
+
+# Other Java Optimizations
+export JAVA_OPTS="$JAVA_OPTS -Djava.awt.headless=true -XX:+UseConcMarkSweepGC -server "
+# -Djava.awt.headless=true sets the value of the java.awt.headless system property to true. Setting this system
+#   property to true prevent graphics rendering code from assuming that a graphics console exists.
+# -XX:+UseConcMarkSweeGC is one of the available collectors for Garbage collection and good for web apps
+# -server instructs the launcher to use the Java HotSpot Server VM designed for long running Java processes
 
 # Set the user Tomcat will run as
 export TOMCAT_USER=tomcat
@@ -287,7 +333,7 @@ SHUTDOWN_WAIT=20
 tomcat_pid() {
         echo `ps -fe | grep $CATALINA_BASE | grep -v grep | tr -s " "|cut -d" " -f2`
 }
- 
+
 start() {
   pid=$(tomcat_pid)
   if [ -n "$pid" ]
@@ -296,16 +342,16 @@ start() {
   else
     # Start tomcat
     echo -e "\e[00;32mStarting tomcat\e[00m"
-    #ulimit -n 100000
-    #umask 007
-    #/bin/su -p -s /bin/sh $TOMCAT_USER
-        if [ `user_exists $TOMCAT_USER` = "1" ]
-        then
-                /bin/su $TOMCAT_USER -c $CATALINA_HOME/bin/startup.sh
-        else
-                sh $CATALINA_HOME/bin/startup.sh
-        fi
-        status
+
+    if [ `user_exists $TOMCAT_USER` = "1" ]
+    then
+      sh $CATALINA_HOME/bin/startup.sh
+      # Dies when using HSQL as tomcat user - not sure why
+      #/bin/su $TOMCAT_USER -c $CATALINA_HOME/bin/startup.sh
+    else
+      sh $CATALINA_HOME/bin/startup.sh
+    fi
+    status
   fi
   return 0
 }
@@ -321,7 +367,7 @@ terminate() {
         echo -e "\e[00;31mTerminating Tomcat\e[00m"
         kill -9 $(tomcat_pid)
 }
- 
+
 stop() {
   pid=$(tomcat_pid)
   if [ -n "$pid" ]
@@ -353,7 +399,6 @@ stop() {
   return 0
 }
 
- 
 user_exists(){
         if id -u $1 >/dev/null 2>&1; then
         echo "1"
@@ -384,5 +429,22 @@ case $1 in
         ;;
 esac
 exit 0
+
+```
+> threadfix/WEB-INF/classes/jdbc.properties
+
+```
+# database settings, this can be the central location for different DB settings
+# that are referenced in /src/main/resources/applicationContext-hibernate.xml.
+
+#MYSQL
+jdbc.driverClassName=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://10.10.10.10:3306/threadfix?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&jdbcCompliantTruncation=false
+jdbc.username=threadfix-user
+jdbc.password=baiphixeiNgiejah8ieciaweet
+hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+hibernate.hbm2ddl.auto=update
+
+hibernate.show_sql=false
 
 ```
