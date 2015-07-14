@@ -59,40 +59,38 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.45-b02, mixed mode)
 
 ``` 
 
-## Install Tomcat 8
+## Install Tomcat 7
 
-### Get the latest version of Tomcat 8
+### Get the latest version of Tomcat 7
 
-Check the [official Tomcat download site](https://tomcat.apache.org/download-80.cgi) for the most recent version.
+Check the [official Tomcat download site](https://tomcat.apache.org/download-70.cgi) for the most recent version.
 
 Download the binary .tar.gz version and grab the PGP and sha1 files as well.
 
 ```
-# wget http://apache.osuosl.org/tomcat/tomcat-8/v8.0.24/bin/apache-tomcat-8.0.24.tar.gz
-# wget https://www.apache.org/dist/tomcat/tomcat-8/v8.0.24/bin/apache-tomcat-8.0.24.tar.gz.asc
-# wget https://www.apache.org/dist/tomcat/tomcat-8/v8.0.24/bin/apache-tomcat-8.0.24.tar.gz.sha1
+# wget http://mirror.cc.columbia.edu/pub/software/apache/tomcat/tomcat-7/v7.0.63/bin/apache-tomcat-7.0.63.tar.gz
+# wget https://www.apache.org/dist/tomcat/tomcat-7/v7.0.63/bin/apache-tomcat-7.0.63.tar.gz.asc
+# wget https://www.apache.org/dist/tomcat/tomcat-7/v7.0.63/bin/apache-tomcat-7.0.63.tar.gz.sha1
 ```
 
 ### Check the download's SHA1 sum and PGP signature.
 
 ```
-# sha1sum apache-tomcat-8.0.24.tar.gz >> apache-tomcat-8.0.24.tar.gz.sha1
-# vi apache-tomcat-8.0.24.tar.gz.sha1
+# sha1sum apache-tomcat-7.0.63.tar.gz >> apache-tomcat-7.0.63.tar.gz.sha1
+# vi apache-tomcat-7.0.63.tar.gz.sha1
   (or less, nano or the your editor of choice - 
    just make sure the sums match)
-# gpg --verify apache-tomcat-8.0.24.tar.gz.asc 
-gpg: Signature made Wed 01 Jul 2015 03:23:09 PM CDT using RSA key ID 2F6059E7
+# gpg --verify apache-tomcat-7.0.63.tar.gz.asc 
+gpg: Signature made Tue 30 Jun 2015 03:13:20 AM CDT using RSA key ID D63011C7
 gpg: Can't check signature: No public key
 ```
 
-This is expected if you've never checked the signature before.  You'll need to fetch it and add it to your gpg keychain.  If you don't have the signature, get it the first time.  The vital item is the **RSA key ID 2F6059E7** from the output above.  Use that like:
+This is expected if you've never checked the signature before.  You'll need to fetch it and add it to your gpg keychain.  If you don't have the signature, get it the first time.  The vital item is the **RSA key ID D63011C7** from the output above.  Use that like:
 
 ```
-# gpg --keyserver hkp://keys.gnupg.net --recv-keys 2F6059E7
-gpg: requesting key 2F6059E7 from hkp server keys.gnupg.net
-gpg: /root/.gnupg/trustdb.gpg: trustdb created
-gpg: key 2F6059E7: public key "Mark E D Thomas <markt@apache.org>" imported
-gpg: no ultimately trusted keys found
+# gpg --keyserver hkp://keys.gnupg.net --recv-keys D63011C7
+gpg: requesting key D63011C7 from hkp server keys.gnupg.net
+gpg: key D63011C7: public key "Violeta Georgieva Georgieva (CODE SIGNING KEY) <violetagg@apache.org>" imported
 gpg: Total number processed: 1
 gpg:               imported: 1  (RSA: 1)
 ```
@@ -100,26 +98,27 @@ gpg:               imported: 1  (RSA: 1)
 Now that you actually have the key, do verify again:
 
 ```
-# gpg --verify apache-tomcat-8.0.24.tar.gz.asc 
-gpg: Signature made Wed 01 Jul 2015 03:23:09 PM CDT using RSA key ID 2F6059E7
-gpg: Good signature from "Mark E D Thomas <markt@apache.org>"
+# gpg --verify apache-tomcat-7.0.63.tar.gz.asc 
+gpg: Signature made Tue 30 Jun 2015 03:13:20 AM CDT using RSA key ID D63011C7
+gpg: Good signature from "Violeta Georgieva Georgieva (CODE SIGNING KEY) <violetagg@apache.org>"
 gpg: WARNING: This key is not certified with a trusted signature!
 gpg:          There is no indication that the signature belongs to the owner.
-Primary key fingerprint: A9C5 DF4D 22E9 9998 D987  5A51 10C0 1C5A 2F60 59E7
+Primary key fingerprint: 713D A88B E509 1153 5FE7  16F5 208B 0AB1 D630 11C7
+
 ```
 
-The not trusted thing is OK unless you've been to a PGP/gpg key signing party with Mark E D Thomas.  If that's true, I assume you know what to do.  Move info on gpg signing at the kernel.org URL in the resources used section below.
+The not trusted signature thing is OK unless you've been to a PGP/gpg key signing party with Mark E D Thomas.  If that's true, I assume you know what to do.  Move info on gpg signing at the kernel.org URL in the resources used section below.
 
 ### Extract and move Tomcat
 
 Extract Tomcat from the tarball and move it to /opt.
 
 ```
-# tar -xzvf apache-tomcat-8.0.24.tar.gz
+# tar -xzvf apache-tomcat-7.0.63.tar.gz
   [bunch of text scroll removed]
-# touch apache-tomcat-8.0.24/00-apache-tomcat-8.0.24
+# touch apache-tomcat-7.0.63/00-apache-tomcat-7.0.63
   (lets you easily determine installed version with a clean path)
-# mv apache-tomcat-8.0.24 /opt/tomcat
+# mv apache-tomcat-7.0.63 /opt/tomcat
 ```
 
 ### Do a test launch of Tomcat
@@ -205,20 +204,26 @@ Not copying any file from skel directory into it.
 # chown -R tomcat.tomcat /opt/java-apps/
 ```
 
-
-
 ### Install ThreadFix war file
 
-scp the ThreadFix WAR file over
+Move (e.g. scp) the ThreadFix WAR file over to the server.
 
 Inject our own jdbc.properties file into the TF war file
+**currently using HSQL in create mode** 
+**edited jdbc.properties**
 
+Setup ThreadFix logging
+**edited log4j.xml**
+
+Setup temporary scratch folder & bump up memory
 
 ### Test that ThreadFix works
 
 
 
 ### Harden Tomcat
+
+Best suggestion is to front Tomcat with Nginx and use iptables to close all but 22, 80 and 443 inbound.
 
 #### Resources used:
 + http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
