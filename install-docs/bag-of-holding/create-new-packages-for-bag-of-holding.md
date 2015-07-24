@@ -35,6 +35,9 @@ Create some files we'll use on an ongoing basis in the fpm-files directory.
 
 * prod.py - settings file with production values
 * prod-secret-key - used in prod.py for Django's SECRET_KEY setting
+
+Create some files we'll use on an ongoing basis in the root of the project directory.
+
 * build-deb - script to consistently call FPM to build debs
 * build-rpm - script to consistently call FPM to build rpms
 * boh-postinsts - script to run after BOH package is installed
@@ -59,7 +62,7 @@ $ chmod u+x build-deb build-rpm
 If there's an existing repo checkout on this computer, pull the latest version from the repo.
 
 ```
-$ git fetch
+$ git pull
 remote: Counting objects: 45, done.
 remote: Compressing objects: 100% (31/31), done.
 remote: Total 45 (delta 15), reused 42 (delta 12), pack-reused 0
@@ -131,11 +134,25 @@ $ ./build-rpm 1.0.3
 
 ### Move the files over to your server
 
-stuff goes here.
+Move the .deb or .rpm over to the server - scp is probably the best method
+
+```
+$ scp bag-of-holding_1.0.3-00_all.deb user@prod.example.com:/home/user/
+user@prod.example.com's password:
+```
 
 ## Server install
 
-stuff goes here.
+Connect to the server and shutdown BOH before we do the upgrade.  +1 for data integrity.
+
+```
+# supervisorctl stop boh
+
+```
+
+### Setup the ThreadFix cron if you're using TF
+
+
 
 ### Config files
 
@@ -181,6 +198,12 @@ DATABASES = {
 # Email
 # https://docs.djangoproject.com/en/1.8/topics/email/#smtp-backend
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Shift BOH into a subdirectory on the server
+URL_PREFIX = 'boh/'
+
+LOGIN_URL = os.path.join('/', URL_PREFIX, 'accounts/login')
+LOGIN_REDIRECT_URL = os.path.join('/', URL_PREFIX)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
