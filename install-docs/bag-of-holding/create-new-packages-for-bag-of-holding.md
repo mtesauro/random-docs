@@ -62,6 +62,7 @@ $ chmod u+x build-deb build-rpm
 If there's an existing repo checkout on this computer, pull the latest version from the repo.
 
 ```
+$ cd bag-of-holding
 $ git pull
 remote: Counting objects: 45, done.
 remote: Compressing objects: 100% (31/31), done.
@@ -75,8 +76,10 @@ From https://github.com/PearsonEducation/bag-of-holding
 If you're using a specific release, check it out with git
 
 ```
-$ git checkout release/name/or/number
-  (NEED SAMPLE OUTPUT)
+$ git checkout v0.0.4
+Branch v0.0.4 set up to track remote branch v0.0.4 from origin.
+Switched to a new branch 'v0.0.4'
+$ 
 ```
 
 ## Package with FPM
