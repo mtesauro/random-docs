@@ -240,8 +240,6 @@ root@pipeline:/opt/boh/bag-of-holding# git branch
 * v0.0.4
 ```
 
-======================================[snapshot taken here]======================================
-
 # Create the prod.py settings file
 
 ```
