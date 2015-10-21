@@ -8,6 +8,10 @@ Note:  Lab Setup assumes you start with either OWASP WTE or an Ubuntu/Xubuntu 14
 
 [Additional-labs](http://appseclive.org/apt/pipeline/)
 
+[Beta tools list](https://github.com/mtesauro/random-docs/tree/master/appsec-pipeline-docs/tool-review)
+
+[Velocity 2015 Talk](http://www.slideshare.net/mtesauro/appsec-pipeline-velcocity-ny-2015)
+
 ### Bag of Holding
 
 [Bag of Holding Repo](https://github.com/PearsonEducation/bag-of-holding)
