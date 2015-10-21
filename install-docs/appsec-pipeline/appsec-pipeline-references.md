@@ -70,4 +70,8 @@ Found but not used
 
 [Adam Parson's example app](https://github.com/aparsons/appsec-pipeline-example)
 
+[Lynis - Open Source Auditing](https://cisofy.com/lynis/)
+
+[Lynis Download](https://cisofy.com/downloads/)
+
 [OWASP Training Materials](https://www.owasp.org/index.php/Education/Free_Training)
