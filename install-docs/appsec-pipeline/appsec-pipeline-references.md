@@ -64,6 +64,14 @@ Found but not used
 
 [Wickett's Lab setup](https://gist.github.com/wickett/81f96e3b6473ee82f8f1)
 
+## Zap
+
+[CI with Zap](http://intellavis.com/blog/?p=560)
+
+[Command-line Zap](http://www.morethanseven.net/2014/06/23/using-owasp-zap-from-the-command-line/)
+
+[Command-line tool for Zap](https://github.com/garethr/zapr)
+
 ### Other Pipeline Apps
 
 [Taiga](https://taiga.io/)
@@ -71,6 +79,8 @@ Found but not used
 [Defect Dojo](https://github.com/rackerlabs/django-DefectDojo)
 
 [Matt Konda's pipeline project](https://bitbucket.org/jemurai/pipeline)
+
+[Faraday](https://www.faradaysec.com/)
 
 [Adam Parson's example app](https://github.com/aparsons/appsec-pipeline-example)
 
