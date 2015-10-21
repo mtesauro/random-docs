@@ -6,6 +6,8 @@
 
 Note:  Lab Setup assumes you start with either OWASP WTE or an Ubuntu/Xubuntu 14.04 installation.
 
+[Additional-labs](http://appseclive.org/apt/pipeline/)
+
 ### Bag of Holding
 
 [Bag of Holding Repo](https://github.com/PearsonEducation/bag-of-holding)
@@ -68,3 +70,4 @@ Found but not used
 
 [Adam Parson's example app](https://github.com/aparsons/appsec-pipeline-example)
 
+[OWASP Training Materials](https://www.owasp.org/index.php/Education/Free_Training)
