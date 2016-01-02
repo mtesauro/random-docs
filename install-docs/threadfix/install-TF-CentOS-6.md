@@ -42,6 +42,36 @@ export JAVA_HOME=/usr/java/jdk1.8.0_45
 export JRE_HOME=/usr/java/jdk1.8.0_45/jre
 ```
 
+### If you have an existing Java install
+
+Check to see if there's more then one JDK:
+
+```
+# rpm -qa | grep jdk
+java-1.7.0-openjdk-devel-1.7.0.85-2.6.1.3.el6_7.x86_64
+jdk1.8.0_65-1.8.0_65-fcs.x86_64
+java-1.7.0-openjdk-1.7.0.85-2.6.1.3.el6_7.x86_64
+```
+
+Use alternatives to setup the 1.8.x Java just installed
+
+```
+# alternatives --config java
+
+There are 2 programs which provide 'java'.
+
+  Selection    Command
+-----------------------------------------------
+*+ 1           /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/bin/java
+   2           /usr/java/jdk1.8.0_65/jre/bin/java
+
+Enter to keep the current selection[+], or type selection number: 2
+# alternatives --display java | grep points
+ link currently points to /usr/java/jdk1.8.0_65/jre/bin/java
+```
+
+You're good to go, the older JDK is not the default
+
 ### Check your setup
 
 ```
@@ -94,6 +124,8 @@ gpg: key D63011C7: public key "Violeta Georgieva Georgieva (CODE SIGNING KEY) <v
 gpg: Total number processed: 1
 gpg:               imported: 1  (RSA: 1)
 ```
+
+If you  cannot access Apache's signing key via hkp://, its also available at [MIT's Keyserver](https://pgp.mit.edu/pks/lookup?op=get&search=0x208B0AB1D63011C7)
 
 Now that you actually have the key, do verify again:
 
@@ -166,6 +198,7 @@ Create a script that will start and stop Tomcat during server restarts:
 # cd /etc/init.d/
 # vi tomcat
   (contents at the bottom of this doc)
+# chmod 755 tomcat
 ```
 
 Now add Tomcat to chkconfig so that is starts up on reboot.  Go ahead an make sure it works as expected.
@@ -189,14 +222,14 @@ waiting for processes to exit
 
 ### Create a user for Tomcat/ThreadFix to use
 
-Create user so Tomcat does not as root and use /opt/tomcat as its home directory.
+Create user so Tomcat does not run as root and use /opt/tomcat as its home directory.
 
 ```
 # groupadd tomcat
 # useradd -g tomcat -c "Apache Tomcat" -d /opt/tomcat tomcat
 useradd: warning: the home directory already exists.
 Not copying any file from skel directory into it.
-# chown -R tomcat.tomcat /opt/tomcat/
+# chown -R tomcat:tomcat /opt/tomcat/
 ```
 
 ### Install ThreadFix war file
@@ -222,7 +255,7 @@ Move the ThreadFix app over to Tomcat
 
 ```
 # mv threadfix /opt/tomcat/webapps/
-# chown -R tomcat.tomcat /opt/tomcat/webapps/threadfix/
+# chown -R tomcat:tomcat /opt/tomcat/webapps/threadfix/
 ```
 
 ### Test that ThreadFix works
