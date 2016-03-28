@@ -1,0 +1,14 @@
+localhost:8888
+
+root ./site
+
+git {
+    repo https://github.com/mtesauro/test-caddy.git
+    path tools
+}
+
+markdown /tools {
+    ext .md
+    #css resources/css/foghorn.css
+    template tool.tpl
+}
