@@ -90,7 +90,8 @@ if [ $NOCONTRIBS -ne 0 ]; then
 fi
 
 # Pull first contrib from the punk by getting the line before and adding 1
-BEFORE=`grep -n '"mw-numlink">500' page1 | head -n 1 | cut --delimiter=":" --field=1`
+#BEFORE=`grep -n '"mw-numlink">500' page1 | head -n 1 | cut --delimiter=":" --field=1`
+BEFORE=`grep -n 'class="mw-lastlink">oldest' page1 | head -n 1 | cut --delimiter=":" --field=1`
 MATCH=$((BEFORE + 1))
 
 logger "Line before is $BEFORE and matched line is $MATCH" $LOG

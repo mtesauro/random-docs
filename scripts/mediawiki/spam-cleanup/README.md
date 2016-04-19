@@ -20,6 +20,8 @@ If it finds a wiki page that has other authors, the wiki session times
 out, or other issues, the URLs are listed in a file called skipped_[day].txt
 e.g. skipped_2016-04-19.txt so that those URLs can be manually inspected.
 
+#### Setup
+
 Required info to run this:
 
 * USR - set to the wiki username who will be doing the deleting
@@ -28,7 +30,25 @@ Required info to run this:
 * HOST - set to the hostname of the MediaWiki server
 * A file called "cookies.txt" which contains the cookie values from a valid session with the wiki. 
 
+Config example:
+
+```
+USR="Mtesauro"
+PUNK="Nishuyadav257"
+AUTHORS='User:Nishuyadav257|User:Pa306013|User_talk:Maintenance_script'
+HOST="https://www.owasp.org"
+```
+
+Cookies file example:
+
+```
+$ cat cookies.txt 
+wikiUserName=Wuser; wikiLoggedOut=1461016441; wiki_session=[session id here]; wikiUserID=7777;
+```
+
 One way to collect this is to log into the MediaWiki instance with a browser and a local proxy such as OWASP ZAP. The cookie values can be copy/pasted out of proxy's captured HTTP traffic.  An example with bogus values in included in this repo.
+
+#### Running these tools
 
 clean-spam.sh is designed to delete a single page per run.  This allows it to be used to clean up a specific instance or used with wrapper.sh to run until it exits with a non-zero exit status aka an error.  clean-spam.sh logs all its actions in a directory called 'logs' which is created in the working directory if it doesn't already exist.  The wrapper.sh script outputs each iteration of clean-spam.sh to let you know how many times its run.  An example run is below:
 
