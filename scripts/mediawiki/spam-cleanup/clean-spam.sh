@@ -35,8 +35,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 USR="Mtesauro"
-PUNK="Nishuyadav257"
-AUTHORS='User:Nishuyadav257|User:Pa306013|User_talk:Maintenance_script'
+PUNK="Yadavvarun"
+AUTHORS='User:Nishuyadav257|User:Pa306013|User:Adreababa|User:Yadavvarun|User_talk:Maintenance_script'
 START=`date +"%Y-%m-%d_%T"`
 LOG="logs/run_$START.txt"
 HOST="https://www.owasp.org"
@@ -119,7 +119,7 @@ EDITS=`cat history | wc -l`
 logger "History of $PUNK's first contribs has $EDITS edits" $LOG
 
 # Get the count of authors in our list of punk authors + wiki maintenance_script user
-AUTHCNT=`grep -E 'User:Nishuyadav257|User:Pa306013|User_talk:Maintenance_script' history | wc -l`
+AUTHCNT=`grep -E ${AUTHORS} history | wc -l`
 
 # If author count is 0, there's a problem or there are no more page contributions
 if [ $COOKIECK -eq 0 ]; then
