@@ -13,10 +13,10 @@ Limitations:
 
 * Google Drive doesn't like exec permissions so any file syncronized with these scripts will loose there exec permissions and be set to 664 aka '-rw-rw-r--'
 * Occasionally, the syncronization will be slower then the next file event. However, things will catch up if one of the following occurs:
-* * the very next file event will catch things up by causing a sync 
-* * you can make a insignificant file change to trigger sync'ing 
-* * running umnount-gdrive will cause a final bi-directional syncronization to occur.
-* If you're going to sync a large directory, you may want to just run 'google-drive-ocamlfuse /your/mount/point' and then use cp or similar to do the initial load.  This is designed to make continual small changes.
+..* the very next file event will catch things up by causing a sync 
+..* you can make a insignificant file change to trigger sync'ing 
+..* running umnount-gdrive will cause a final bi-directional syncronization to occur.
+* If you're going to sync a large directory, you may want to just run 'google-drive-ocamlfuse /your/mount/point' and then use cp or similar to do the initial load.  These scripts are designed to make continual small changes.
 
 If you want to check the state of syncronization manually after mounting your Google Drive, run:
 
