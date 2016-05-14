@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Set a variable for where this script lives
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Set a couple of important variables
+if [ ! -f "$DIR"/gdrive-vars ]; then
+   #DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+   echo ""
+   echo "!! - Configuration file not found"
+   echo "!! - Please create a gdrive-vars file in $DIR"
+   echo ""
+   echo "Config file needs content below with your preferred values instead:"
+   echo ""
+   ## MAKE SURE THESE ARE ALL STILL NEEDED
+   echo "MOUNTPOINT=\"/home/edexample/box\""
+   echo "LOCALSYNC=\"/home/edexample/stuff\""
+   echo "REMOTESYNC=\"/home/edexample/box/stuff\""
+   echo "CONFDIR=\"/home/edexample/.lsyncd\""
+   echo "LOGFILE=\"$CONFDIR/lsyncd.log\""
+   echo ""
+   exit 1
+else
+   source "$DIR"/gdrive-vars
+fi
+
+# Run in an infinite loop
+while true 
+do 
+inotifywait -r -e modify,attrib,close_write,move,create,delete "$LOCALSYNC" && unison gdrive 2>/dev/null | grep "<-?->"
+done

@@ -1,0 +1,5 @@
+MOUNTPOINT="/home/edexample/google-drive"
+LOCALSYNC="/home/edexample/stuff"
+REMOTESYNC="/home/edexample/google-drive/stuff"
+CONFDIR="/home/edexample/.magic-sync"
+LOGFILE="$CONFDIR/sync.log"

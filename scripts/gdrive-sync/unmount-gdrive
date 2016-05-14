@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# Set a variable for where this script lives
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Set a couple of important variables
+if [ ! -f "$DIR"/gdrive-vars ]; then
+   echo ""
+   echo "!! - Configuration file not found"
+   echo "!! - Please create a gdrive-vars file in $DIR"
+   echo ""
+   echo "Config file needs content below with your preferred values instead:"
+   echo ""
+   echo "MOUNTPOINT=\"/home/edexample/google-drive\""
+   echo "LOCALSYNC=\"/home/edexample/stuff\""
+   echo "REMOTESYNC=\"/home/edexample/google-drive/stuff\""
+   echo "CONFDIR=\"/home/edexample/.magic-sync\""
+   echo "LOGFILE=\"$CONFDIR/sync.log\""
+   echo ""
+   exit 1
+else
+   source "$DIR"/gdrive-vars
+fi
+
+echo ""
+echo "Unmounting Google Drive from $MOUNTPOINT"
+echo ""
+
+# Stop sync-gdrive so filesystem can be cleanly unmounted
+echo "=> Stopping auto-magical syncing"
+echo ""
+kill -15 `cat "$CONFDIR"/pid4sync`
+
+# Make sure auto-magical syncing is really dead
+CKGONE=`pstree -p | grep "sync-gdrive" | wc -l`
+
+if [ $CKGONE -gt 0 ]; then
+   echo "!! - Unable to stop auto-magical sync"
+   echo ""
+   echo "!! - Use pstree -p | grep \"sync-gdrive\" to find the script"
+   echo ""
+   echo "!! - Leaving Google Drive mounted. To manually unmount, use:"
+   echo "       fusermount -u $MOUNTPOINT"
+   echo ""
+   exit 1
+fi
+
+# Do a final bi-directional sync
+echo "=> Doing a final bi-directional sync"
+echo ""
+CONFLICTS=`unison gdrive 2>/dev/null | grep "<-?->"`
+CHARS=`echo -n "$CONFLICTS" | wc -c`
+
+# Check if there's any conflicts
+if [ $CHARS -eq 0 ]; then
+   echo "=> No conflicts found in bi-directional sync"
+   echo ""
+else
+   echo ""
+   echo "!! - CONFLICTS FOUND during bi-directional sync.  Conflicting file(s):"
+   echo "local          remote     filename"
+   echo "---------------------------------------------"
+   echo "  $CONFLICTS"
+   echo ""
+   echo "You MAY want look at these before you unmount your Google Drive"
+   echo ""
+   echo "Run this command to check conflict status"
+   echo "    unison -batch $LOCALSYNC $REMOTESYNC 2>/dev/null | grep \"<-?->\""
+   echo ""
+   echo "Once the conflict is corrected, unmount Google Drive with the "
+   echo "command below and re-run this script"
+   echo "    fusermount -u $MOUNTPOINT"
+   echo ""
+   exit 1
+fi
+
+# Unmount Google Drive
+fusermount -u $MOUNTPOINT
+UMOUNTCK=$?
+
+# If the umount fails, print a message
+if [ $UMOUNTCK -gt 0 ]; then
+   echo "!! - Unable to unmount your Box.com account"
+   echo ""
+   exit 1
+fi
+
+echo "Google Drive unmounted from $MOUNTPOINT"
+echo ""
+echo "Bye"
+echo ""

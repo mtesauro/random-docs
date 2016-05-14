@@ -1,0 +1,213 @@
+#!/bin/bash
+
+# Set a variable for where this script lives
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Set a couple of important variables
+if [ ! -f "$DIR"/gdrive-vars ]; then
+   echo ""
+   echo "!! - Configuration file not found"
+   echo "!! - Please create a gdrive-vars file in $DIR"
+   echo ""
+   echo "Config file needs content below with your preferred values instead:"
+   echo ""
+   echo "MOUNTPOINT=\"/home/edexample/google-drive\""
+   echo "LOCALSYNC=\"/home/edexample/stuff\""
+   echo "REMOTESYNC=\"/home/edexample/google-drive/stuff\""
+   echo "CONFDIR=\"/home/edexample/.magic-sync\""
+   echo "LOGFILE=\"$CONFDIR/sync.log\""
+   echo ""
+   exit 1
+else
+   source "$DIR"/gdrive-vars
+fi
+
+# Check for the needed binaries
+if [ ! -f /usr/bin/google-drive-ocamlfuse ]; then
+   echo ""
+   echo "!! - google-drive-ocamlfuse package is not installed"
+   echo "!! - Please install it before running this again with"
+   echo "!! - $ sudo add-apt-repository ppa:alessandro-strada/ppa"
+   echo "!! - $ sudo apt-get update"
+   echo "!! - $ sudo apt-get install google-drive-ocamlfuse"
+   echo ""
+   echo "!! - You will also need to run the command below to setup"
+   echo "!! - access to Google Drive for google-drive-ocamlfuse"
+   echo "!! - $ google-drive-ocamlfuse"
+   echo "!! - NOTE: A browser will be launched to request access"
+   echo "!! - the first time you run google-drive-ocamlfuse"
+   echo ""
+   exit 1
+fi
+if [ ! -f /usr/bin/unison ]; then
+   echo ""
+   echo "!! - unison package is not installed"
+   echo "!! - Please install it before running this again with"
+   echo "!! - $ sudo apt-get install unison"
+   echo ""
+   exit 1
+fi
+if [ ! -f /usr/bin/inotifywait ]; then
+   echo ""
+   echo "!! - inotify-tools package is not installed"
+   echo "!! - Please install it before running this again with"
+   echo "!! - $ sudo apt-get install inotify-tools"
+   echo ""
+   exit 1
+fi
+
+# Now that Google Drive is mounted, see if the REMOTESYNC directory exists
+if [ ! -d "$LOCALSYNC" ]; then
+   echo ""
+   echo "!! - Local directory was not found"
+   echo "!! - $LOCALSYNC does not exist, that makes no sense."
+   echo "!! - "
+   echo "!! - Make sure $DIR/gdrive-vars has the values you want & expect"
+   echo "!! - Currently it contains:"
+   echo ""
+   cat "$DIR"/gdrive-vars
+   echo ""
+   exit 1
+fi
+
+echo ""
+echo "Mounting Google Drive under $MOUNTPOINT"
+echo ""
+
+# Check to ensure its not already mounted
+MOUNTCOUNT=`mount | grep "$MOUNTPOINT" | wc -l`
+if [ $MOUNTCOUNT -gt 0 ]; then
+   echo "!! - Google Drive is already mounted at $MOUNTPOINT"
+   echo "!! - Run 'mount' to see what is currently mounted"
+   echo "!! - To unmount, run 'fusermount -u $MOUNTPOINT'" 
+   echo "!! - or run 'unmount-gdrive' script to unmount it before"
+   echo "!! - running this script again"
+   echo ""
+   exit 1
+fi
+
+# Check for the mountpoint and create if necessary.  Bail if it exists and is not empty
+if [ ! -d "$MOUNTPOINT" ]; then
+   echo "=> $MOUNTPOINT does not exist, creating it now..."
+   echo ""
+   mkdir "$MOUNTPOINT"
+else
+   FILECOUNT=`ls -1 "$MOUNTPOINT" | wc -l`
+   if [ $FILECOUNT -gt 0 ]; then
+      echo "!! - $MOUNTPOINT is not empty"
+      echo "!! - Please remove files from $MOUNTPOINT or"
+      echo "!! - chage the configured mount point in box-vars file"
+      echo ""
+      exit 1
+   fi
+fi
+
+# Mount the Google Drive at the configured mountpoint
+google-drive-ocamlfuse "$MOUNTPOINT" 
+MOUNTCK=$?
+
+# If the mount fails, bail out
+if [ $MOUNTCK -gt 0 ]; then
+   echo ""
+   echo "!! - Unable to mount your Google Drive"
+   echo "!! - See the error message above for details"
+   echo ""
+   exit 1
+fi
+
+# Now that Google Drive is mounted, see if the REMOTESYNC directory exists
+if [ ! -d "$REMOVESYNC" ]; then
+   echo "=> $REMOVESYNC does not exist, creating it now..."
+   echo ""
+   mkdir "$REMOVESYNC"
+fi
+
+# Test to see if Unison directory and profile exists
+if [ ! -d "$HOME"/.unison ]; then
+   echo "=> $HOME/.unison does not exist, creating it now..."
+   echo ""
+   mkdir "$HOME"/.unison
+fi
+
+if [ ! -f "$HOME"/.unison/gdrive.prf ]; then
+   echo "=> unison profile file $HOME/.unison/gdrive.prf not found"
+   echo "=> Creating it now..."
+   echo ""
+   echo "# The two directories to sync" >> "$HOME"/.unison/gdrive.prf
+   echo "root = $LOCALSYNC" >> "$HOME"/.unison/gdrive.prf
+   echo "root = $REMOTESYNC" >> "$HOME"/.unison/gdrive.prf
+   echo "" >> "$HOME"/.unison/gdrive.prf
+   echo "# Add lines here to skip sync'ing specific paths under the roots above" >> "$HOME"/.unison/gdrive.prf
+   echo "# Line below is a commented out example" >> "$HOME"/.unison/gdrive.prf
+   echo "#ignore = Path /do-not/sync" >> "$HOME"/.unison/gdrive.prf
+   echo "" >> "$HOME"/.unison/gdrive.prf
+   echo "# Setup permissions so they work on Google Drive" >> "$HOME"/.unison/gdrive.prf
+   echo "# This will remove execute for user, group and other" >> "$HOME"/.unison/gdrive.prf
+   echo "# Since Google Drive doesn't allow execute" >> "$HOME"/.unison/gdrive.prf
+   echo "perms = 0o1664" >> "$HOME"/.unison/gdrive.prf
+   echo "" >> "$HOME"/.unison/gdrive.prf
+   echo "# Run non-interactively" >> "$HOME"/.unison/gdrive.prf
+   echo "batch = true" >> "$HOME"/.unison/gdrive.prf
+   echo "=> NOTE: If you need to ignore subdirectories, place those in "
+   echo "=> $HOME/.unison/gdrive.prf using the provided example"
+   echo ""
+fi
+
+# Initial bi-directional sycnronization
+echo "=> Starting an initial bi-directional sync"
+echo ""
+CONFLICTS=`unison gdrive 2>/dev/null | grep "<-?->"`
+CHARS=`echo -n "$CONFLICTS" | wc -c`
+
+# Check if there's any conflicts
+if [ $CHARS -eq 0 ]; then
+   echo "=> No conflicts found in bi-directional sync"
+   echo ""
+else
+   echo "!! - CONFLICTS FOUND during bi-directional sync.  Conflicting file(s):"
+   echo "local          remote     filename"
+   echo "---------------------------------------------"
+   echo "  $CONFLICTS"
+   echo ""
+   echo "Quiting - YOU WILL NEED TO MANUALLY FIX THIS."
+   echo ""
+   echo "Auto-magical syncing will NOT be started until you correct this conflict"
+   echo ""
+   echo "Run this command to check conflict status"
+   echo "    unison -batch $LOCALSYNC $REMOTESYNC 2>/dev/null | grep \"<-?->\""
+   echo ""
+   echo "Once the conflict is corrected, unmount Google Drive with the "
+   echo "command below and re-run this script"
+   echo "    fusermount -u $MOUNTPOINT"
+   echo ""
+   exit 1
+fi
+
+# Check for $CONFDIR and create if necessary.
+if [ ! -d "$CONFDIR" ]; then
+   echo "=> $CONFDIR does not exist, creating it now..."
+   echo ""
+   mkdir "$CONFDIR"
+fi
+
+# Start up auto-magical syncing of the local directory to Google Drive
+"$DIR"/sync-gdrive &>> "$LOGFILE" &
+PIDSYNC=$!
+
+# Write the pid for the shutdown script
+echo $PIDSYNC > "$CONFDIR"/pid4sync
+
+echo "=> Syncing changes from the local directory to Google Drive"
+echo ""
+echo "=> NOTE: Make changes in your local directory - $LOCALSYNC so"
+echo "=> they will automatically propagate to $REMOTESYNC.  "
+echo "=> DO NOT MAKE CHANGES IN $REMOTESYNC"
+echo ""
+echo "=> Use the unmount-gdrive script to safely stop syncing and "
+echo "=> unmount Google Drive from your computer"
+echo ""
+echo "=> NOTE: Execute file permissions do not survive this process"
+echo "=> since Google Drive doesn't allow exec permissions"
+echo ""
+echo "ENJOY!"
+echo ""
