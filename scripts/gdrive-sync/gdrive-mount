@@ -1,5 +1,20 @@
 #!/bin/bash
 
+#    This file is part of gdrive sync.
+#
+#    gdrive sync is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    gdrive sync is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with gdrive sync.  If not, see <http://www.gnu.org/licenses/>.
+
 # Set a variable for where this script lives
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -116,10 +131,10 @@ if [ $MOUNTCK -gt 0 ]; then
 fi
 
 # Now that Google Drive is mounted, see if the REMOTESYNC directory exists
-if [ ! -d "$REMOVESYNC" ]; then
-   echo "=> $REMOVESYNC does not exist, creating it now..."
+if [ ! -d "$REMOTESYNC" ]; then
+   echo "=> $REMOTESYNC does not exist, creating it now..."
    echo ""
-   mkdir "$REMOVESYNC"
+   mkdir "$REMOTESYNC"
 fi
 
 # Test to see if Unison directory and profile exists
